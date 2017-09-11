@@ -1,0 +1,371 @@
+(server-start)
+
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/local"))
+
+;; Package management
+(require 'package)
+(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+
+(package-initialize)
+(defadvice package-download-tar
+  (after package-download-tar-initialize activate compile)
+  "initialize the package after compilation"
+  (package-initialize))
+
+(defadvice package-download-single
+  (after package-download-single-initialize activate compile)
+  "initialize the package after compilation"
+  (package-initialize))
+
+;; Sync Emacs environment with shell
+(exec-path-from-shell-initialize)
+(exec-path-from-shell-copy-env "GOPATH")
+
+;; Basic UI preferences
+(remove-hook 'kill-buffer-query-functions 'server-kill-buffer-query-function)
+(setq inhibit-splash-screen t)
+(setq backup-inhibited t)
+(setq auto-save-default nil)
+(setq pop-up-windows nil)
+(setq read-buffer-completion-ignore-case t)
+
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+(setq transient-mark-mode nil)
+
+;; Theme
+;;(require 'jay-theme)
+(load-theme 'deeper-blue t)
+
+;; Editing preferences
+(global-auto-revert-mode)
+;;(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
+(setq-default truncate-lines t)
+(setq-default py-indent-offset 2)
+(setq-default indent-tabs-mode nil)
+(setq-default tab-width 2)
+(setq-default c-basic-offset 2)
+(setq-default c-syntactic-indentation nil)
+(setq-default js-indent-level 2)
+(setq-default rust-indent-unit 2)
+(setq-default css-indent-offset 2)
+(setq-default lua-indent-level 2)
+(setq-default sh-indentation 2)
+
+;; Editing modes
+(add-to-list 'auto-mode-alist '("\\.h$" . c++-mode))
+(add-to-list 'auto-mode-alist '("\\.gypi?$" . python-mode))
+;;(add-to-list 'auto-mode-alist '("WORKSPACE$" . skylark-mode))
+;;(add-to-list 'auto-mode-alist '("BUILD.bazel$" . google3-build-mode))
+(add-to-list 'auto-mode-alist '("WORKSPACE$" . python-mode))
+(add-to-list 'auto-mode-alist '("BUILD$" . python-mode))
+(add-to-list 'auto-mode-alist '("\\.bazel$" . python-mode))
+(add-to-list 'auto-mode-alist '("\\.bzl$" . python-mode))
+(add-to-list 'auto-mode-alist '("\\.md$" . markdown-mode))
+
+;; 100 column line (but 80 in C/C++)
+(require 'fill-column-indicator)
+(setq-default fci-rule-color "slate grey")
+(setq-default fci-rule-column 100)
+(add-hook 'c-mode-hook (lambda () (progn (fci-mode 1) (setq fci-rule-column 80))))
+(add-hook 'c++-mode-hook (lambda () (progn (fci-mode 1) (setq fci-rule-column 80))))
+(add-hook 'js-mode-hook (lambda () (progn (fci-mode 1) (setq fci-rule-column 80))))
+(add-hook 'python-mode-hook (lambda () (progn (fci-mode 1) (setq fci-rule-column 80))))
+(add-hook 'text-mode-hook (lambda () (progn (fci-mode 1) (setq fci-rule-column 80))))
+(add-hook 'java-mode-hook (lambda () (fci-mode 1)))
+(add-hook 'go-mode-hook (lambda () (progn (fci-mode 1) (setq fci-rule-column 80))))
+(add-hook 'sh-mode-hook (lambda () (progn (fci-mode 1) (setq fci-rule-column 80))))
+
+;; Disable obnoxious electric indentation
+(add-hook 'after-change-major-mode-hook (lambda () (electric-indent-mode -1)))
+
+;; Navigation
+(require 'pinky-mode)
+(pinky-unbind-normal-keys)
+(require 'key-chord)
+(key-chord-mode 1)
+;;(key-chord-define-global "jk" 'god-mode-all)
+(key-chord-define-global "jk" 'pinky-mode-activate)
+
+;; Go stuff
+(add-hook 'go-mode-hook (lambda ()
+  (setq gofmt-command "/usr/local/google/home/jayconrod/.go/bin/goimports")
+  (add-hook 'before-save-hook 'gofmt-before-save)
+  (local-set-key (kbd "M-.") 'godef-jump)
+  (local-set-key (kbd "M-*") 'pop-tag-mark)
+  (auto-complete-mode 1)))
+(with-eval-after-load 'go-mode
+  (require 'go-autocomplete))
+
+;; Custom functions
+(defun toggle-dedicated-window ()
+  (interactive)
+  (let* ((window (selected-window))
+         (dedicated (window-dedicated-p window)))
+    (set-window-dedicated-p window (not dedicated))
+    (message "Window %s to %s"
+      (if dedicated "no longer dedicated" "now dedicated")
+      (buffer-name))))
+
+(defun revert-buffer-without-query ()
+  (interactive)
+  (revert-buffer t t t))
+(global-set-key (kbd "C-x C-r") 'revert-buffer-without-query)
+
+(defun to-unix ()
+  (interactive)
+  (set-buffer-file-coding-system 'undecided-unix))
+
+(defun to-dos ()
+  (interactive)
+  (set-buffer-file-coding-system 'undecided-dos))
+
+(defun cross ()
+  (interactive)
+  (progn
+    (set-frame-height (selected-frame) 75)
+    (set-frame-width (selected-frame) 180)
+    (split-window-vertically 52)
+    (split-window-horizontally)
+    (other-window 2)
+    (split-window-horizontally)
+    (other-window 2)))
+
+(defun tag-buffer (tag)
+  "Adds a prefix to the buffer name"
+  (interactive "sTag for buffer: ")
+  (let* ((file-path (buffer-file-name))
+         (file-name (file-name-nondirectory file-path))
+         (new-name (concat tag "-" file-name)))
+    (rename-buffer new-name)))
+(global-set-key (kbd "C-x C-t") 'tag-buffer)
+
+(defun delete-file-and-buffer ()
+  "Kills the current buffer and deletes the file it's visiting."
+  (interactive)
+  (let ((file-name (buffer-file-name)))
+    (kill-buffer (current-buffer))
+    (when file-name
+      (delete-file file-name))))
+
+(defun rename-file-and-buffer (new-file-name)
+  "Renames the current buffer and the file it's visiting."
+  (interactive "sNew filename: ")
+  (let ((old-file-name (buffer-file-name)))
+    (write-file new-file-name)
+    (delete-file old-file-name)))
+
+(defun grep (regex)
+  "Deletes lines not matching an expression"
+  (interactive "sRegex: ")
+  (keep-lines regex))
+
+(setq-default previous-shell-match-input "")
+(make-variable-buffer-local 'previous-shell-match-input)
+
+(defun string-starts-with-p (string prefix)
+  (if (> (length prefix) (length string))
+      nil
+      (string= prefix (substring string 0 (length prefix)))))
+
+(defun previous-input-matching-input (arg)
+  "Imitate history-search-backward in bash."
+  (interactive "*p")
+  (let* ((cmd-line-input (comint-get-old-input-default))
+         (input (if (and (> (length previous-shell-match-input) 0)
+                            (string-starts-with-p cmd-line-input previous-shell-match-input))
+                    previous-shell-match-input
+                    cmd-line-input))
+         (regexp (concat "^" input)))
+    (setq previous-shell-match-input input)
+    (comint-previous-matching-input regexp arg)))
+
+(add-hook 'comint-mode-hook
+  (function (lambda ()
+              (setq previous-match-input nil)
+              (local-set-key (kbd "M-p") 'previous-input-matching-input))))
+
+(defun count-matching-lines (regexp)
+  "Print and return number of lines matching REGEX in the region.
+Similar to how-many."
+  (interactive "sHow many lines match regexp: ")
+  (progn
+    (let* ((rstart (region-beginning))
+           (rend (region-end))
+           (count 0)
+           (case-fold-search (if (and case-fold-search search-upper-case)
+                                 (isearch-no-upper-case-p regexp t)
+                                 case-fold-search)))
+      (save-excursion
+        (goto-char rstart)
+        (while (and (< (point) rend)
+                    (re-search-forward regexp rend t))
+          (setq count (+ count 1))
+          (forward-line 1)))
+      (if (called-interactively-p 'any)
+        (message "%d occurrence%s"
+          count
+          (if (= count 1) "" "s")))
+      count)))
+
+(defun delete-everything-except (regexp)
+  "Delete text between the point and the end of the buffer that don't
+match the given regexp. A newline is inserted after each match."
+  (interactive "sRegexp to keep: ")
+  (progn
+    (let* ((case-fold-search (if (and case-fold-search search-upper-case)
+                                 (isearch-no-upper-case-p regexp t)
+                                 case-fold-search))
+           (from (point)))
+      (save-excursion
+        (while (re-search-forward regexp)
+          (let* ((len (length (match-string 0)))
+                 (to (- (point) len)))
+            (delete-region from to)
+            (newline)
+            (setq from (point))))))))
+
+(defun uniq-lines ()
+  "Remove consecutive duplicate lines between point and end of buffer."
+  (interactive)
+  (save-excursion
+    (goto-char (point-at-bol))
+    (let ((prev-line ""))
+      (while (not (eobp))
+        (let* ((bol (point-at-bol))
+               (eol (min (+ (point-at-eol) 1) (point-max)))
+               (current-line (buffer-substring bol eol)))
+          (if (string= prev-line current-line)
+              (delete-region bol eol)
+              (progn
+                (setq prev-line current-line)
+                (forward-line 1))))))))
+
+(defun shell-with-name (name)
+  "Create a shell with the given name"
+  (interactive "sShell name: ")
+  (let* ((full-name (concat "-" name))
+         (buf (generate-new-buffer full-name)))
+    (shell buf)))
+(global-set-key (kbd "M-s") 'shell-with-name)
+(add-to-list 'display-buffer-alist '("^-.*" display-buffer-same-window))
+
+(defun git-blame-line ()
+  "Runs `git blame` on the current line and adds the commit id to the kill ring"
+  (interactive)
+  (let* ((line-number (+ 1 (count-lines 1 (point))))
+         (line-arg (format "%d,%d" line-number line-number))
+         (buf (generate-new-buffer "*git-blame-line*")))
+    (call-process "git" nil buf nil "blame" (buffer-file-name) "-L" line-arg)
+    (with-current-buffer buf
+      (let ((commit (buffer-substring 1 9))
+            (output (buffer-string)))
+        (message "%s" output)
+        (kill-new commit)))
+    (kill-buffer buf)))
+
+(defun smarter-move-beginning-of-line (arg)
+  "Move point back to indentation or beginning of line"
+  (interactive "^p")
+  (setq arg (or arg 1))
+
+  ;; Move lines first
+  (when (/= arg 1)
+    (let ((line-move-visual nil))
+      (forward-line (1- arg))))
+
+  (let ((orig-point (point)))
+    (back-to-indentation)
+    (when (<= orig-point (point))
+      (move-beginning-of-line 1))))
+
+(setq gdb-many-windows t)
+(defun gdb-new-frame ()
+  (interactive)
+  (let ((gdb-frame (make-frame)))
+    (set-frame-width gdb-frame 200)
+    (set-frame-height gdb-frame 57)
+    (select-frame gdb-frame)
+    (call-interactively 'gdb)))
+
+(defun make-executable ()
+  (interactive)
+  (let* ((file-path (buffer-file-name))
+         (command (concat "chmod +x " file-path)))
+  (shell-command command)))
+
+(defun stack-trace ()
+  (interactive)
+  (if (file-exists-p "blaze-bin")
+      (shell-command-on-region (region-beginning) (region-end) "stack -" nil t)
+      (message "error: blaze-bin could not be found")))
+
+(defun find-shell-file ()
+  (interactive)
+  (let* ((buffers (buffer-list (selected-frame)))
+         (shell-buffer (find-if (lambda (buf)
+                                  (not (eq nil (get-buffer-process buf)))) buffers))
+         (shell-dir (if shell-buffer
+                      (with-current-buffer shell-buffer default-directory)
+                      default-directory)))
+    (with-temp-buffer
+      (setq default-directory shell-dir)
+      (call-interactively 'find-file))))
+;; (global-set-key (kbd "C-x M-f") 'find-shell-file)
+
+(defun find-shell-file-at-point ()
+  (interactive)
+  (let* ((buffers (buffer-list (selected-frame)))
+         (shell-buffer (find-if (lambda (buf)
+                                  (not (eq nil (get-buffer-process buf)))) buffers)))
+    (with-current-buffer shell-buffer
+      (call-interactively 'find-file-at-point))))
+(global-set-key (kbd "C-x M-f") 'find-shell-file-at-point)
+
+(defun kill-buffers-in-dir (dir)
+  (interactive "DKill buffers in dir: ")
+  (let* ((abs-dir-name (expand-file-name dir))
+         (buffers (buffer-list)))
+    (dolist (buffer buffers)
+      (let ((bn (buffer-file-name buffer)))
+        (if (and bn (string-prefix-p abs-dir-name bn))
+            (kill-buffer buffer))))))
+
+;; Misc key bindings
+(global-set-key (kbd "M-c") 'comment-region)
+(global-set-key (kbd "M-C") 'uncomment-region)
+(global-unset-key (kbd "M-`"))
+(global-unset-key (kbd "C-z"))
+(global-set-key (kbd "C-l") 'erase-buffer)
+(add-hook 'c-mode-common-hook
+          (lambda () (local-set-key (kbd "C-x c") 'ff-find-other-file)))
+(global-set-key (kbd "C-x <SPC>") 'gud-break)
+
+(setq mac-option-key-is-meta nil)
+(setq mac-command-key-is-meta t)
+(setq mac-command-modifier 'meta)
+(setq mac-option-modifier 'none)
+
+(global-set-key (kbd "C-x C-c") 'save-buffers-kill-emacs)
+(put 'erase-buffer 'disabled nil)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(background-color "#fdf6e3")
+ '(background-mode light)
+ '(cursor-color "#657b83")
+ '(custom-safe-themes (quote ("ed4a3e37cc966eb5ea153de0e33f642fe41d8126b51264e2a68ccb35040cb6a7" "8422db58ee1c9901106c92412e86c32e0ce9b1b1fcef64a4bc7e028acce5c027" "4c5cd2d044c1ceaad232545c8919ade1ee26241866f50fa590acb953375cbc26" "720665e88a6ceeaa17650aaf55e9ca7249c4512d7bdd658edfc17daa82cfdc28" "084b31fde5f82d61e99d3495d365e5781c15e88b4e4f1553ef44d94373eb53b8" "739b7704f1c9bc6752a6423898673ad9be3a8104ff1f7ffc4f1d12a0eeee2bb2" "02a29caaba0ed30a962583cd7621ca6660bb9076de613a3ec050a8c21b0d6cc6" "90b29f8934b5a2f7eb1b2b4c14184c4d13b13e167379284592f80ef27c843a3e" "8bc84cdfe1a224bdffb786862c4558fea1aa561ea629f06b8abad0415ee32884" "51e0ca80043a8cb1b6c24a82a6e6a53aa040fa998bae2fd4e06f84e951867f7c" "6a3c6c20ce16ebfaa55d06bd6b49e1291cfad9b44230948ac1e1e84365727c3b" "6b1be2815aaf388c95e3ba0871edcf8500d09eeb55d10d9bf90d7d0eb179d57c" "5108df1ab2f41ed1f63014de615972c0a30bbf7d4f7d72c9b5bffc82275df4d7" "fc5fcb6f1f1c1bc01305694c59a1a861b008c534cae8d0e48e4d5e81ad718bc6" "1e7e097ec8cb1f8c3a912d7e1e0331caeed49fef6cff220be63bd2a6ba4cc365" "8aebf25556399b58091e533e455dd50a6a9cba958cc4ebb0aab175863c25b9a4" "d677ef584c6dfc0697901a44b885cc18e206f05114c8a3b7fde674fce6180879" default)))
+ '(foreground-color "#657b83")
+ '(pinky-inactive-color "green")
+ '(safe-local-variable-values (quote ((eval when (and (buffer-file-name) (file-regular-p (buffer-file-name)) (string-match-p "^[^.]" (buffer-file-name))) (emacs-lisp-mode) (when (fboundp (quote flycheck-mode)) (flycheck-mode -1)) (unless (featurep (quote package-build)) (let ((load-path (cons ".." load-path))) (require (quote package-build)))) (package-build-minor-mode))))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+(put 'upcase-region 'disabled nil)

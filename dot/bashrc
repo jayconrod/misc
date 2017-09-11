@@ -1,0 +1,152 @@
+# don't put duplicate lines or lines starting with space in the history.
+# See bash(1) for more options
+HISTCONTROL=ignoreboth
+
+# append to the history file, don't overwrite it
+shopt -s histappend
+
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+HISTSIZE=1000
+HISTFILESIZE=2000
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+PS1='\[$(tput bold)$(tput setaf 4)\]\W \$ \[$(tput sgr0)\]'
+
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors -a -n "$color_prompt" ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    #alias dir='dir --color=auto'
+    #alias vdir='vdir --color=auto'
+
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+alias gist='git status -uno'
+alias gitlog='git log --format="%h %s"'
+
+function find-in {
+  find . -name "$2" -exec grep -H "$1" {} \;
+}
+
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
+
+export GOPATH=${HOME}/.go
+export GOBIN=${GOPATH}/bin
+export PATH=${GOBIN}:${PATH}
+export EDITOR='emacsclient -c'
+
+function bb {
+  pushd . &>/dev/null
+  while [ $(pwd) != / -a ! -d blaze-bin -a ! -d bazel-bin ]; do
+    cd ..
+  done
+  if [ -d blaze-bin -o -d bazel-bin ]; then
+    echo $(pwd)
+  else
+    echo "blaze-bin-parent-does-not-exist"
+  fi
+  popd &>/dev/null
+}
+
+function build-notify {
+  if [ $? -eq 0 ]; then
+    notify-send -i weather-clear 'Success!' 'Build completed.'
+  else
+    notify-send -i weather-showers 'Failed!' 'Build completed.'
+  fi
+}
+
+function go-workspace {
+  if [ -e WORKSPACE ]; then
+    echo "WORKSPACE already exists" >&1
+    return 1
+  fi
+  cat >WORKSPACE <<EOF
+git_repository(
+    name = "io_bazel_rules_go",
+    remote = "https://github.com/bazelbuild/rules_go.git",
+    tag = "0.5.4",
+)
+load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
+
+go_repositories()
+EOF
+}
+
+function go-local-workspace {
+  if [ -e WORKSPACE ]; then
+    echo "WORKSPACE already exists" >&1
+    return 1
+  fi
+  cat >WORKSPACE <<EOF
+local_repository(
+    name = "io_bazel_rules_go",
+    path = "$HOME/Code/rules_go",
+)
+load("@io_bazel_rules_go//go:def.bzl", "go_rules_dependencies", "go_register_toolchains")
+go_rules_dependencies()
+go_register_toolchains()
+EOF
+}
+
+function install-bazel {
+  if [ $# -ne 1 ]; then
+    echo "usage: install-bazel version" >&1
+    return 1
+  fi
+  local version=$1
+  if [ "$version" = HEAD ]; then
+    local ci_base="http://ci.bazel.io/job/Bazel/JAVA_VERSION=1.8,PLATFORM_NAME=linux-x86_64/lastSuccessfulBuild/artifact/output/ci"
+    local ci_artifact=$(wget -qO- ${ci_base} | grep -o 'bazel-[^\"]*-installer.sh' | uniq)
+    local url="$ci_base/$ci_artifact"
+  else
+    local url="https://github.com/bazelbuild/bazel/releases/download/$version/bazel-$version-installer-linux-x86_64.sh"
+  fi
+  local download=$HOME/Downloads/install.sh
+  wget -O "$download" "$url"
+  chmod +x "$download"
+  "$download" --user
+  rm -f "$download"
+  if [ -e ~/.bazelrc.bak ]; then
+    mv ~/.bazelrc.bak ~/.bazelrc
+  fi
+  hash -d bazel
+}
+
+function rm-bazel {
+  if [ -d bazel-out ]; then
+    bazel clean
+  fi
+  if [ ! -f WORKSPACE ]; then
+    echo "no workspace file; are you at the repo root?" >&2
+    return 1
+  fi
+  rm -f WORKSPACE
+  find . -name BUILD -o -name BUILD.bazel -delete
+}
+
+function cdgo {
+  cd "$GOPATH/src/$1"
+}
+
+alias bn=build-notify
+alias gica='git commit -a --amend --no-edit'
+alias gibr='git rev-parse --abbrev-ref HEAD'
