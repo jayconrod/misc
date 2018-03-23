@@ -22,6 +22,14 @@
 (exec-path-from-shell-initialize)
 (exec-path-from-shell-copy-env "GOPATH")
 
+(defun shell-cdgo (cmd)
+  (when (string-match "^cdgo\s*\\([^\\s\n]*\\)" cmd)
+    (let ((dir (concat (getenv "GOPATH") "/src/" (match-string 1 cmd))))
+      (shell-cd dir))))
+
+(add-hook 'shell-mode-hook (lambda ()
+  (add-hook 'comint-input-filter-functions 'shell-cdgo nil t)))
+
 ;; Basic UI preferences
 (remove-hook 'kill-buffer-query-functions 'server-kill-buffer-query-function)
 (setq inhibit-splash-screen t)
@@ -43,7 +51,7 @@
 ;;(add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 (setq-default truncate-lines t)
-(setq-default py-indent-offset 2)
+(setq-default python-indent-offset 2)
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 2)
 (setq-default c-basic-offset 2)
@@ -53,6 +61,7 @@
 (setq-default css-indent-offset 2)
 (setq-default lua-indent-level 2)
 (setq-default sh-indentation 2)
+(setq-default fill-column 80)
 
 ;; Editing modes
 (add-to-list 'auto-mode-alist '("\\.h$" . c++-mode))
@@ -64,6 +73,12 @@
 (add-to-list 'auto-mode-alist '("\\.bazel$" . python-mode))
 (add-to-list 'auto-mode-alist '("\\.bzl$" . python-mode))
 (add-to-list 'auto-mode-alist '("\\.md$" . markdown-mode))
+
+(defun git-commit-msg-fn ()
+  (when (string-prefix-p "COMMIT_" (buffer-name))
+    (turn-on-auto-fill)
+    (setq fill-column 70)))
+(add-hook 'after-change-major-mode-hook 'git-commit-msg-fn)
 
 ;; 100 column line (but 80 in C/C++)
 (require 'fill-column-indicator)
@@ -86,7 +101,6 @@
 (pinky-unbind-normal-keys)
 (require 'key-chord)
 (key-chord-mode 1)
-;;(key-chord-define-global "jk" 'god-mode-all)
 (key-chord-define-global "jk" 'pinky-mode-activate)
 
 ;; Go stuff
@@ -332,6 +346,14 @@ match the given regexp. A newline is inserted after each match."
       (let ((bn (buffer-file-name buffer)))
         (if (and bn (string-prefix-p abs-dir-name bn))
             (kill-buffer buffer))))))
+
+(defun buildifier ()
+  (interactive)
+  (if (buffer-modified-p)
+      (message "File has unsaved changes")
+      (progn
+        (shell-command (concat "buildifier " (buffer-file-name)))
+        (revert-buffer t t t))))
 
 ;; Misc key bindings
 (global-set-key (kbd "M-c") 'comment-region)
