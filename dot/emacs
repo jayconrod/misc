@@ -23,7 +23,7 @@
 (exec-path-from-shell-copy-env "GOPATH")
 
 (defun shell-cdgo (cmd)
-  (when (string-match "^cdgo\s*\\([^\\s\n]*\\)" cmd)
+  (when (string-match "^cdgo *\\([^ \n]*\\)" cmd)
     (let ((dir (concat (getenv "GOPATH") "/src/" (match-string 1 cmd))))
       (shell-cd dir))))
 
