@@ -61,6 +61,7 @@
 (setq-default css-indent-offset 2)
 (setq-default lua-indent-level 2)
 (setq-default sh-indentation 2)
+(setq-default sh-basic-offset 2)
 (setq-default fill-column 80)
 
 ;; Editing modes
@@ -105,13 +106,18 @@
 
 ;; Go stuff
 (add-hook 'go-mode-hook (lambda ()
-  (setq gofmt-command "/usr/local/google/home/jayconrod/.go/bin/goimports")
+  (setq gofmt-command (concat (getenv "GOPATH") "/bin/goimports"))
   (add-hook 'before-save-hook 'gofmt-before-save)
   (local-set-key (kbd "M-.") 'godef-jump)
   (local-set-key (kbd "M-*") 'pop-tag-mark)
   (auto-complete-mode 1)))
 (with-eval-after-load 'go-mode
   (require 'go-autocomplete))
+
+;; Bazel stuff
+(add-hook 'python-mode-hook (lambda ()
+  (when (bazel-filename-p (buffer-file-name))
+    (add-hook 'after-save-hook 'buildifier t t))))
 
 ;; Custom functions
 (defun toggle-dedicated-window ()
@@ -354,6 +360,13 @@ match the given regexp. A newline is inserted after each match."
       (progn
         (shell-command (concat "buildifier " (buffer-file-name)))
         (revert-buffer t t t))))
+
+(defun bazel-filename-p (filename)
+  (let ((basename (file-name-nondirectory filename)))
+    (or (string-suffix-p ".bzl" basename)
+        (string-suffix-p ".bazel" basename)
+        (string= "BUILD" basename)
+        (string= "WORKSPACE" basename))))
 
 ;; Misc key bindings
 (global-set-key (kbd "M-c") 'comment-region)
