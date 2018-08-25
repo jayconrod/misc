@@ -116,7 +116,7 @@ func findBuildFiles(repoDir string) ([]string, error) {
 		if err != nil {
 			return err
 		}
-		if filepath.Base(path) != "BUILD.bazel" {
+		if base := filepath.Base(path); base != "BUILD.bazel" && base != "BUILD" {
 			return nil
 		}
 		files = append(files, path)
