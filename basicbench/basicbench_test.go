@@ -1,6 +1,6 @@
-// Package sysbench measures the time taken for basic system operations
+// Package basicbench measures the time taken for basic system operations
 // related to Go builds.
-package sysbench
+package basicbench
 
 import (
 	"crypto/sha256"
