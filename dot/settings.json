@@ -1,0 +1,15 @@
+{
+    "telemetry.enableCrashReporter": false,
+    "telemetry.enableTelemetry": false,
+    "editor.minimap.enabled": false,
+    "editor.tabSize": 2,
+    "editor.lineNumbers": "off",
+    "window.titleBarStyle": "native",
+    "explorer.confirmDelete": false,
+    "go.alternateTools": {
+        "go": "/opt/go1.12beta2/bin/go"
+    },
+    "window.zoomLevel": 0,
+    "terminal.integrated.fontFamily": "Roboto Mono Medium",
+    "editor.ruler": [80],
+}
