@@ -16,7 +16,33 @@ shopt -s checkwinsize
 # make less more friendly for non-text input files, see lesspipe(1)
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
-PS1='\[$(tput bold)$(tput setaf 4)\]\W \$ \[$(tput sgr0)\]'
+function prompt {
+  local st=$?
+  if [ $st -eq 0 ]; then
+    st=
+  else
+    st='! '
+  fi
+  local wd=$(pwd)
+  if [ "$wd" = "$HOME" ]; then
+    wd='~'
+  else
+    wd=$(basename "$wd")
+  fi
+  local branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  if [[ $branch = *[![:space:]]* ]]; then
+    branch=" ᛘ $branch"
+    if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+      branch="${branch}*"
+    fi
+  else
+    branch=
+  fi
+  echo -n "$(tput bold)$(tput setaf 4)"
+  echo -n "${st}${wd}${branch} $"
+  echo "$(tput sgr0) "
+}
+PS1='$(prompt)'
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors -a -n "$color_prompt" ]; then
