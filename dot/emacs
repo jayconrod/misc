@@ -51,13 +51,13 @@
 ;;(add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 (setq-default truncate-lines t)
-(setq-default python-indent-offset 2)
+(setq-default python-indent-offset 4)
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 2)
 (setq-default c-basic-offset 2)
 (setq-default c-syntactic-indentation nil)
 (setq-default js-indent-level 2)
-(setq-default rust-indent-unit 2)
+(setq-default rust-indent-unit 4)
 (setq-default css-indent-offset 2)
 (setq-default lua-indent-level 2)
 (setq-default sh-indentation 2)
@@ -71,7 +71,7 @@
 ;;(add-to-list 'auto-mode-alist '("BUILD.bazel$" . google3-build-mode))
 (add-to-list 'auto-mode-alist '("WORKSPACE$" . python-mode))
 (add-to-list 'auto-mode-alist '("BUILD$" . python-mode))
-(add-to-list 'auto-mode-alist '("\\.bazel$" . python-mode))
+(add-to-list 'auto-mode-alist '("BUILD.bazel$" . python-mode))
 (add-to-list 'auto-mode-alist '("\\.bzl$" . python-mode))
 (add-to-list 'auto-mode-alist '("\\.md$" . markdown-mode))
 
@@ -367,6 +367,20 @@ match the given regexp. A newline is inserted after each match."
         (string-suffix-p ".bazel" basename)
         (string= "BUILD" basename)
         (string= "WORKSPACE" basename))))
+
+(defun clang-format ()
+  (interactive)
+  (if (buffer-modified-p)
+      (message "File has unsaved changes")
+      (progn
+        (let* ((file-name (buffer-file-name))
+               (out-name (concat file-name ".fmt")))
+          (call-process "clang-format" nil (list :file out-name) nil file-name)
+          (rename-file out-name file-name t)
+          (revert-buffer t t t)))))
+(add-hook 'c++-mode-hook (lambda ()
+  (add-hook 'after-save-hook 'clang-format nil t)))
+  
 
 ;; Misc key bindings
 (global-set-key (kbd "M-c") 'comment-region)
