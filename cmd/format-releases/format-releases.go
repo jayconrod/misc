@@ -78,6 +78,9 @@ func run(args []string) error {
 			if d.Kind != "archive" {
 				continue
 			}
+			if d.Arch == "armv6l" {
+				d.Arch = "arm"
+			}
 			n, _ := fmt.Printf("        \"%s_%s\":", d.OS, d.Arch)
 			fmt.Printf("%*s(%q, %q),\n", 29-n, "", d.Filename, d.SHA256)
 		}
