@@ -38,11 +38,9 @@ function prompt {
   else
     branch=
   fi
-  echo -n "$(tput bold)$(tput setaf 4)"
-  echo -n "${st}${wd}${branch} $"
-  echo "$(tput sgr0) "
+  echo -n "${st}${wd}${branch} \$ "
 }
-PS1='$(prompt)'
+PS1='\[\e[34m\e[1m\]$(prompt)\[\e[0m\]'
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors -a -n "$color_prompt" ]; then
