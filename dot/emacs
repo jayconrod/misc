@@ -1,10 +1,19 @@
 (server-start)
 
+;; When setting up a new machine:
+;;   M-x package-install
+;;   exec-path-from-shell
+;;   fill-column-indicator
+;;   key-chord
+;;   go-mode
+;;   auto-complete
+;;   go-autocomplete
+;;
+;;   install pinky-mode from file
 (add-to-list 'load-path (expand-file-name "~/.emacs.d/local"))
 
 ;; Package management
 (require 'package)
-(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 
 (package-initialize)
@@ -20,12 +29,6 @@
 
 ;; Sync Emacs environment with shell
 (exec-path-from-shell-initialize)
-(exec-path-from-shell-copy-env "GOPATH")
-
-(defun shell-cdgo (cmd)
-  (when (string-match "^cdgo *\\([^ \n]*\\)" cmd)
-    (let ((dir (concat (getenv "GOPATH") "/src/" (match-string 1 cmd))))
-      (shell-cd dir))))
 
 (add-hook 'shell-mode-hook (lambda ()
   (add-hook 'comint-input-filter-functions 'shell-cdgo nil t)))
@@ -106,7 +109,7 @@
 
 ;; Go stuff
 (add-hook 'go-mode-hook (lambda ()
-  (setq gofmt-command (concat (getenv "GOPATH") "/bin/goimports"))
+  (setq gofmt-command "goimports")
   (add-hook 'before-save-hook 'gofmt-before-save)
   (local-set-key (kbd "M-.") 'godef-jump)
   (local-set-key (kbd "M-*") 'pop-tag-mark)
