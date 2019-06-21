@@ -73,8 +73,6 @@ if ! shopt -oq posix; then
 fi
 
 export GOPATH=${HOME}/.go
-export GOBIN=${GOPATH}/bin
-export PATH=${GOBIN}:${PATH}
 export EDITOR='emacsclient -c'
 
 function bb {
@@ -153,6 +151,33 @@ function install-bazel {
     mv ~/.bazelrc.bak ~/.bazelrc
   fi
   hash -d bazel
+}
+
+function install-go {
+  if [ $# -ne 1 ]; then
+    echo "usage: install-go version" >&1
+    return 1
+  fi
+  local version=$1
+  local goos=
+  if [ "$(uname)" = Darwin ]; then
+    goos=darwin
+  else
+    goos=linux
+  fi
+  local url=https://dl.google.com/go/$version.$goos-amd64.tar.gz
+  local download=$HOME/Downloads/go-downloads/$version.$goos-amd64.tar.gz
+  local install=/opt/go/$version
+  if [ ! -d "$install" ]; then
+    if [ ! -e "$download" ]; then
+      mkdir -p "$(dirname "$download")"
+      curl -L --output "$download" "$url"
+    fi
+    tar xf "$download" -C "$(dirname "$download")"
+    mv "$(dirname "$download")/go" "$install"
+  fi
+  rm /opt/go/installed
+  ln -sf "$install" /opt/go/installed
 }
 
 function rm-bazel {
