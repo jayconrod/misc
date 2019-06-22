@@ -56,10 +56,9 @@ fi
 
 alias gist='git status -uno'
 alias gitlog='git log --format="%h %s"'
-
-function find-in {
-  find . -name "$2" -exec grep -H "$1" {} \;
-}
+alias bn=build-notify
+alias gica='git commit -a --amend --no-edit'
+alias gibr='git rev-parse --abbrev-ref HEAD'
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
@@ -72,8 +71,8 @@ if ! shopt -oq posix; then
   fi
 fi
 
-export GOPATH=${HOME}/.go
 export EDITOR='emacsclient -c'
+export DOTNET_CLI_TELEMETRY_OPTOUT=true
 
 function bb {
   pushd . &>/dev/null
@@ -96,23 +95,6 @@ function build-notify {
   fi
 }
 
-function go-workspace {
-  if [ -e WORKSPACE ]; then
-    echo "WORKSPACE already exists" >&1
-    return 1
-  fi
-  cat >WORKSPACE <<EOF
-git_repository(
-    name = "io_bazel_rules_go",
-    remote = "https://github.com/bazelbuild/rules_go.git",
-    tag = "0.5.4",
-)
-load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
-
-go_repositories()
-EOF
-}
-
 function go-local-workspace {
   if [ -e WORKSPACE ]; then
     echo "WORKSPACE already exists" >&1
@@ -123,9 +105,50 @@ local_repository(
     name = "io_bazel_rules_go",
     path = "$HOME/Code/rules_go",
 )
-load("@io_bazel_rules_go//go:def.bzl", "go_rules_dependencies", "go_register_toolchains")
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
+
 go_rules_dependencies()
+
 go_register_toolchains()
+
+local_repository(
+    name = "bazel_gazelle",
+    path = "$HOME/Code/bazel-gazelle",
+)
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+
+gazelle_dependencies()
+EOF
+  cat >BUILD.bazel <<EOF
+load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+# gazelle:prefix example.com/hello
+gazelle(name = "gazelle")
+
+go_binary(
+    name = "hello",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["hello.go"],
+    importpath = "example.com/hello",
+    visibility = ["//visibility:public"],
+)
+EOF
+  cat >hello.go <<EOF
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, world!")
+}
 EOF
 }
 
@@ -196,6 +219,7 @@ function cdgo {
   cd "$GOPATH/src/$1"
 }
 
-alias bn=build-notify
-alias gica='git commit -a --amend --no-edit'
-alias gibr='git rev-parse --abbrev-ref HEAD'
+function find-in {
+  find . -name "$2" -exec grep -Hn "$1" {} \;
+}
+

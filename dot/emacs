@@ -45,6 +45,9 @@
 (scroll-bar-mode -1)
 (setq transient-mark-mode nil)
 
+(add-to-list 'display-buffer-alist '("^-.*" display-buffer-same-window))
+(add-to-list 'display-buffer-alist '("^\\*Man" display-buffer-same-window))
+
 ;; Theme
 ;;(require 'jay-theme)
 (load-theme 'deeper-blue t)
@@ -70,8 +73,6 @@
 ;; Editing modes
 (add-to-list 'auto-mode-alist '("\\.h$" . c++-mode))
 (add-to-list 'auto-mode-alist '("\\.gypi?$" . python-mode))
-;;(add-to-list 'auto-mode-alist '("WORKSPACE$" . skylark-mode))
-;;(add-to-list 'auto-mode-alist '("BUILD.bazel$" . google3-build-mode))
 (add-to-list 'auto-mode-alist '("WORKSPACE$" . python-mode))
 (add-to-list 'auto-mode-alist '("BUILD$" . python-mode))
 (add-to-list 'auto-mode-alist '("BUILD.bazel$" . python-mode))
