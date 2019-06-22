@@ -52,6 +52,9 @@
 ;;(require 'jay-theme)
 (load-theme 'deeper-blue t)
 
+;; Shell preferences
+(add-hook 'shell-mode-hook (lambda () (setq truncate-lines nil)))
+
 ;; Editing preferences
 (global-auto-revert-mode)
 ;;(add-hook 'before-save-hook 'delete-trailing-whitespace)
