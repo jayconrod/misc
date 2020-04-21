@@ -223,3 +223,33 @@ function find-in {
   find . -name "$2" -exec grep -Hn "$1" {} \;
 }
 
+function git-clean-branch {
+  local branch
+  local mergeBase
+  local tree
+  local squashed
+  git for-each-ref refs/heads --format="%(refname:short)" | while read branch; do
+    if [ "$branch" == master ]; then
+      continue
+    fi
+    mergeBase=$(git merge-base master "$branch")
+    if [ $? -ne 0 ]; then
+      continue
+    fi
+    tree=$(git rev-parse "$branch^{tree}")
+    if [ $? -ne 0 ]; then
+      continue
+    fi
+    squashed=$(git commit-tree "$tree" -p "$mergeBase" -m _)
+    if [ $? -ne 0 ]; then
+      continue
+    fi
+    if ! git cherry "$squashed" | grep -qv '^-'; then
+      git branch -D "$branch"
+    fi
+  done
+}
+
+alias bn=build-notify
+alias gica='git commit -a --amend --no-edit'
+alias gibr='git rev-parse --abbrev-ref HEAD'
