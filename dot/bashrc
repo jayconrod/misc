@@ -54,7 +54,7 @@ if [ -x /usr/bin/dircolors -a -n "$color_prompt" ]; then
     alias egrep='egrep --color=auto'
 fi
 
-alias gist='git status -uno'
+alias gist='git status'
 alias gitlog='git log --format="%h %s"'
 alias bn=build-notify
 alias gica='git commit -a --amend --no-edit'
