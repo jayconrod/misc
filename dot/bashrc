@@ -220,7 +220,7 @@ function cdgo {
 }
 
 function find-in {
-  find . -name "$2" -exec grep -Hn "$1" {} \;
+  find . -type f -name "$2" -exec grep -Hn "$1" {} \;
 }
 
 function git-clean-branch {
