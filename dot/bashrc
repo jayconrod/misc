@@ -228,11 +228,12 @@ function git-clean-branch {
   local mergeBase
   local tree
   local squashed
+  local main=$(git rev-parse --abbrev-ref origin/HEAD | sed s,origin/,,)
   git for-each-ref refs/heads --format="%(refname:short)" | while read branch; do
-    if [ "$branch" == master ]; then
+    if [ "$branch" == "$main" ]; then
       continue
     fi
-    mergeBase=$(git merge-base master "$branch")
+    mergeBase=$(git merge-base $main "$branch")
     if [ $? -ne 0 ]; then
       continue
     fi
