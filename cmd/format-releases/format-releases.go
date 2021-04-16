@@ -41,7 +41,7 @@ func run(args []string) error {
 	var data []byte
 	var err error
 	if *in == "" {
-		r, err := http.Get("https://golang.org/dl/?mode=json")
+		r, err := http.Get("https://golang.org/dl/?mode=json&include=all")
 		if err != nil {
 			return err
 		}
