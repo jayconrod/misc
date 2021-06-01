@@ -9,4 +9,5 @@ require (
 	github.com/yuin/goldmark v1.1.22
 	golang.org/x/build v0.0.0-20210319160528-9b76b0884b63
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/tools v0.0.0-20200304193943-95d2e580d8eb
 )
