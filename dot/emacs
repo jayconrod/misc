@@ -274,8 +274,10 @@ match the given regexp. A newline is inserted after each match."
   "Create a shell with the given name"
   (interactive "sShell name: ")
   (let* ((full-name (concat "-" name))
-         (buf (generate-new-buffer full-name)))
-    (shell buf)))
+         (buf (find-if (lambda (buf) (string= (buffer-name buf) "-exp")) (buffer-list))))
+    (if buf
+        (switch-to-buffer buf)
+        (shell (generate-new-buffer full-name)))))
 (global-set-key (kbd "M-s") 'shell-with-name)
 (add-to-list 'display-buffer-alist '("^-.*" display-buffer-same-window))
 
