@@ -1,0 +1,14 @@
+{
+  "name": "Note Link",
+  "description": "Shortens certain links for notes",
+  "version": "0.1",
+  "manifest_version": 3,
+  "action": {
+    "default_title": "Click to copy a link",
+    "default_popup": "popup.html"
+  },
+  "permissions": ["activeTab", "tabs"],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

@@ -1,0 +1,6 @@
+.container {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0;
+  font: 11pt sans-serif;
+}
