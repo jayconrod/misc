@@ -251,6 +251,18 @@ function git-clean-branch {
   done
 }
 
+function gotestenv {
+  export GOMODCACHE=~/Code/modcache
+  go clean -modcache
+  export GOPROXY=http://localhost:6123/mod
+  export GOSUMDB=off
+  PATH=~/goroot/bin:$DEFAULT_PATH
+  if [ $# -eq 1 ]; then
+    local name=$1
+    txtar -x <"$(go env GOROOT)/src/cmd/go/testdata/script/${name}.txt"
+  fi
+}
+
 alias bn=build-notify
 alias gica='git commit -a --amend --no-edit'
 alias gibr='git rev-parse --abbrev-ref HEAD'
