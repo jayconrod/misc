@@ -219,6 +219,18 @@ function cdgo {
   cd "$GOPATH/src/$1"
 }
 
+function wake {
+  case "$1" in
+  karst)
+    wol -a karst.localdomain:7 -t 4c:ed:fb:94:39:06
+    ;;
+  *)
+    echo "unknown host $1" >&2
+    return 1
+    ;;
+  esac
+}
+
 function find-in {
   find . -type f -name "$2" -exec grep -Hn "$1" {} \;
 }
