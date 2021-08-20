@@ -55,6 +55,7 @@ if [ -x /usr/bin/dircolors -a -n "$color_prompt" ]; then
 fi
 
 alias gist='git status'
+alias girc='GIT_EDITOR=true git rebase --continue'
 alias gitlog='git log --format="%h %s"'
 alias bn=build-notify
 alias gica='git commit -a --amend --no-edit'
@@ -222,7 +223,19 @@ function cdgo {
 function wake {
   case "$1" in
   karst)
-    wol -a karst.localdomain:7 -t 4c:ed:fb:94:39:06
+    wol -a 192.168.1.255:9 -t 4c:ed:fb:94:39:06
+    ;;
+  *)
+    echo "unknown host $1" >&2
+    return 1
+    ;;
+  esac
+}
+
+function hush {
+  case "$1" in
+  karst)
+    ssh jay@karst.localdomain sudo systemctl suspend
     ;;
   *)
     echo "unknown host $1" >&2
