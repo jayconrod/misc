@@ -200,7 +200,7 @@ function install-go {
     tar xf "$download" -C "$(dirname "$download")"
     mv "$(dirname "$download")/go" "$install"
   fi
-  rm /opt/go/installed
+  rm -f /opt/go/installed
   ln -sf "$install" /opt/go/installed
 }
 
