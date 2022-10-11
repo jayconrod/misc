@@ -190,18 +190,25 @@ function install-go {
     goos=linux
   fi
   local url=https://dl.google.com/go/$version.$goos-amd64.tar.gz
-  local download=$HOME/Downloads/go-downloads/$version.$goos-amd64.tar.gz
+  local download=/opt/go/dl/$version.tar.gz
   local install=/opt/go/$version
+
+  if [ ! -d /opt/go ]; then
+    echo 'running `sudo mkdir /opt/go`' >&2
+    sudo mkdir /opt/go || return 1
+    sudo chown "$(id -un):$(id -gn)" /opt/go || return 1
+  fi
   if [ ! -d "$install" ]; then
     if [ ! -e "$download" ]; then
-      mkdir -p "$(dirname "$download")"
-      curl -L --output "$download" "$url"
+      mkdir -p "$(dirname "$download")" || return 1
+      curl -L --output "$download" "$url" || return 1
     fi
-    tar xf "$download" -C "$(dirname "$download")"
-    mv "$(dirname "$download")/go" "$install"
+    tar xf "$download" -C "$(dirname "$download")" || return 1
+    mv "$(dirname "$download")/go" "$install" || return 1
+    chmod -R a-w "$install" || return 1
   fi
-  rm -f /opt/go/installed
-  ln -sf "$install" /opt/go/installed
+  rm -f /opt/go/installed || return 1
+  ln -sf "$install" /opt/go/installed || return 1
 }
 
 function rm-bazel {
