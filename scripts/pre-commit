@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -o errexit -o nounset -o pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+DISALLOWED='DO NOT SUBMIT|DO NOT COMMIT|rint.*!!|>>>>>>|<<<<<<<'
+
+# This unfortunately doesn't work for files containing spaces
+if git diff-index -G"$DISALLOWED" --cached HEAD --diff-filter=AM -U0 |
+    grep '^+' | grep -i --color -E "$DISALLOWED"
+then
+  echo -e "\nTo commit anyway, use --no-verify\n"
+  exit 1
+fi
